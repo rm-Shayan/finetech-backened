@@ -1,0 +1,97 @@
+# ======================
+# Node.js
+# ======================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Optional npm cache folder
+.npm
+
+# ======================
+# Environment Files
+# ======================
+.env
+.env.local
+.env.*.local
+
+# ======================
+# Logs
+# ======================
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ======================
+# Build / Dist
+# ======================
+dist/
+build/
+tmp/
+temp/
+
+# ======================
+# VS Code
+# ======================
+.vscode/
+.history/
+
+# ======================
+# OS Files
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Coverage / Test Reports
+# ======================
+coverage/
+*.lcov
+
+# ======================
+# Cloud / Uploads / Cache
+# ======================
+uploads/
+tmp/
+.cache/
+*.tgz
+
+# ======================
+# Mongo / Database
+# ======================
+*.bak
+dump/
+*.sqlite
+*.sqlite3
+
+# ======================
+# Frontend / React / Vite
+# ======================
+*.tsbuildinfo
+*.env.development.local
+*.env.production.local
+*.env.test.local
+public/build/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ======================
+# Optional Secrets / Credentials
+# ======================
+secret*.json
+keys/
+*.pem
+*.p12
+*.jks
+
+# ======================
+# Misc
+# ======================
+*.swp
+*.swo
