@@ -175,47 +175,42 @@ export const getUserComplaints = asyncHandler(async (req, res) => {
 
   const baseKey = `user:${userId}:complaints:ids`;
   let redisKey = baseKey;
+
   if (status && priority)
     redisKey = `${baseKey}:status:${status}:priority:${priority}`;
   else if (status) redisKey = `${baseKey}:status:${status}`;
   else if (priority) redisKey = `${baseKey}:priority:${priority}`;
 
-  // Check key type first
+  // ensure key type
   const keyType = await redisClient.type(redisKey);
-  if (keyType !== "set") {
-    // Key is missing or wrong type → delete to reset
-    await redisClient.del(redisKey).catch(() => {});
-  }
+  if (keyType !== "set") await redisClient.del(redisKey).catch(() => {});
 
-  // Get cached IDs
   let cachedIds = await redisClient.sMembers(redisKey);
   let complaints = [];
 
   if (cachedIds.length) {
-    // Redis hit
     complaints = await Complaint.find({
       _id: { $in: cachedIds },
       userId,
       isDeleted: false,
-    }).sort({ createdAt: -1 });
-    if (!complaints.length) {
-      // stale cache
-      await redisClient.del(redisKey).catch(() => {});
-      cachedIds = [];
-    }
+    })
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
-  if (!cachedIds.length) {
-    // Redis miss → fetch from DB
-    const query = { userId };
+  if (!complaints.length) {
+    const query = { userId, isDeleted: false };
     if (status) query.status = status;
     if (priority) query.priority = priority;
 
-    complaints = await Complaint.find(query).sort({ createdAt: -1 });
+    complaints = await Complaint.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // Populate Redis asynchronously
+    // async cache write
     if (complaints.length) {
       const pipeline = redisClient.multi();
+
       complaints.forEach(({ _id, status, priority }) => {
         const id = _id.toString();
         const keys = [
@@ -224,16 +219,42 @@ export const getUserComplaints = asyncHandler(async (req, res) => {
           `${baseKey}:priority:${priority}`,
           `${baseKey}:status:${status}:priority:${priority}`,
         ];
-        keys.forEach((key) => {
-          pipeline.sAdd(key, id); // set automatically prevents duplicates
-          pipeline.expire(key, 86400); // 24 hours
+        keys.forEach((k) => {
+          pipeline.sAdd(k, id);
+          pipeline.expire(k, 86400);
         });
       });
+
       pipeline.exec().catch(() => {});
     }
   }
 
-  // Pagination
+  // -------------------------
+  // ✅ FETCH REMARKS IN BATCH
+  // -------------------------
+const needRemarksIds = complaints.map((c) => c._id);
+
+let remarksMap = {};
+
+if (needRemarksIds.length) {
+  const remarks = await Remark.find({
+     complaintId: { $in: needRemarksIds },
+  }).lean();
+
+  remarks.forEach((r) => {
+    remarksMap[r.complaintId.toString()] = sanitizeRemark(r);
+  });
+}
+
+  // attach remark
+  complaints = complaints.map((c) => ({
+    ...c,
+    remark:remarksMap?.[c._id.toString()] ?? null,
+  }));
+
+  // -------------------------
+  // PAGINATION (after sort)
+  // -------------------------
   const pagedComplaints = complaints.slice(skip, skip + limit);
   const sanitizedComplaints = pagedComplaints.map(sanitizeComplaint);
 
@@ -247,8 +268,8 @@ export const getUserComplaints = asyncHandler(async (req, res) => {
         filters: { status: status || "ALL", priority: priority || "ALL" },
         complaints: sanitizedComplaints,
       },
-      "User complaints fetched successfully",
-    ),
+      "User complaints fetched successfully"
+    )
   );
 });
 

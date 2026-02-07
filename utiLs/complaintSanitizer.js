@@ -19,6 +19,7 @@ export const sanitizeComplaint = (complaint) => {
     assignedAt: complaint.assignedAt,
     rejectedAt: complaint.rejectedAt,
     escalatedAt: complaint.escalatedAt,
+    remark:complaint?.remark||null,
 
     createdAt: complaint.createdAt,
     updatedAt: complaint.updatedAt,
