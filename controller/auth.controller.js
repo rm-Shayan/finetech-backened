@@ -86,21 +86,22 @@ export const loginUser = asyncHandler(async (req, res) => {
   // Generate tokens
   const { accessToken, refreshToken } = await generateTokens(user);
 
-  // Set refresh token in HTTP-only cookie
- res.cookie("refreshToken", refreshToken, {
-  httpOnly: true,
-  secure: true,       // hamesha true
-  sameSite: "None",   // hamesha None
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+  const origin = req.headers.origin;
+  const isLocalhost = origin?.startsWith("http://localhost");
 
-res.cookie("accessToken", accessToken, {
-  httpOnly: true,
-  secure: true,
-  sameSite: "None",
-  maxAge: 15 * 60 * 1000,
-});
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: !isLocalhost, // localhost → false
+    sameSite: isLocalhost ? "Lax" : "None",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: !isLocalhost,
+    sameSite: isLocalhost ? "Lax" : "None",
+    maxAge: 15 * 60 * 1000,
+  });
 
   const safeUser = user.toObject();
   delete safeUser.password;
@@ -291,19 +292,22 @@ export const refreshTokens = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken: newRefreshToken } =
     await generateTokens(user);
 
-  res.cookie("refreshToken", refreshToken, {
-  httpOnly: true,
-  secure: true,       // hamesha true
-  sameSite: "None",   // hamesha None
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+  const origin = req.headers.origin;
+  const isLocalhost = origin?.startsWith("http://localhost");
 
-res.cookie("accessToken", accessToken, {
-  httpOnly: true,
-  secure: true,
-  sameSite: "None",
-  maxAge: 15 * 60 * 1000,
-});
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: !isLocalhost, // localhost → false
+    sameSite: isLocalhost ? "Lax" : "None",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: !isLocalhost,
+    sameSite: isLocalhost ? "Lax" : "None",
+    maxAge: 15 * 60 * 1000,
+  });
 
   return res
     .status(200)
@@ -444,9 +448,8 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
   // ✅ role sirf tab cache me add hoga jab sbp_admin na ho
   if (req.user?.role) {
-  cacheKeyParts.push(`viewer:${req.user.role}`);
-}
-
+    cacheKeyParts.push(`viewer:${req.user.role}`);
+  }
 
   const cacheKey = `users:${cacheKeyParts.join(":")}`;
 
@@ -457,15 +460,14 @@ export const getAllUsers = asyncHandler(async (req, res) => {
   }
 
   // 2️⃣ Build DB query
- const query = {
-  isDeleted: false,
-  role: { $ne: "sbp_admin" }, // 🔒 ALWAYS ignore admin
-};
+  const query = {
+    isDeleted: false,
+    role: { $ne: "sbp_admin" }, // 🔒 ALWAYS ignore admin
+  };
 
-if (role && role !== "sbp_admin") {
-  query.role = role; // viewer ke role ke hisaab se filter
-}
-
+  if (role && role !== "sbp_admin") {
+    query.role = role; // viewer ke role ke hisaab se filter
+  }
 
   if (bankCode) {
     const bank = await Bank.findOne({ bankCode }).lean();
