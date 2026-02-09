@@ -87,19 +87,20 @@ export const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateTokens(user);
 
   // Set refresh token in HTTP-only cookie
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true only in prod
-    sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax", // dev me Lax
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+ res.cookie("refreshToken", refreshToken, {
+  httpOnly: true,
+  secure: true,       // hamesha true
+  sameSite: "None",   // hamesha None
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 15 * 60 * 1000,
-  });
+res.cookie("accessToken", accessToken, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "None",
+  maxAge: 15 * 60 * 1000,
+});
+
 
   const safeUser = user.toObject();
   delete safeUser.password;
@@ -291,18 +292,18 @@ export const refreshTokens = asyncHandler(async (req, res) => {
     await generateTokens(user);
 
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true only in prod
-    sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax", // dev me Lax
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  httpOnly: true,
+  secure: true,       // hamesha true
+  sameSite: "None",   // hamesha None
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 15 * 60 * 1000,
-  });
+res.cookie("accessToken", accessToken, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "None",
+  maxAge: 15 * 60 * 1000,
+});
 
   return res
     .status(200)
