@@ -12,6 +12,8 @@ services:
       - .env
     depends_on:
       - redis
+    networks:
+      - finetech-network
     restart: unless-stopped
 
   redis:
@@ -19,4 +21,10 @@ services:
     container_name: redis-server
     ports:
       - "6379:6379"
+    networks:
+      - finetech-network
     restart: unless-stopped
+
+networks:
+  finetech-network:
+    name: finetech-network
